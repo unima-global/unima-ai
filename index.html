@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>UNIMA Voice Chat</title>
+</head>
+<body>
+  <h2>🎤 UNIMA Voice Chat</h2>
+  <button onclick="startRecording()">Bắt đầu ghi âm</button>
+  <button onclick="stopRecording()">Kết thúc</button>
+  <button onclick="sendAudio()">Gửi</button>
+
+  <p id="transcript">🗨️ Chờ bạn nói...</p>
+  <p id="ai-response">🤖 AI đang phản hồi...</p>
+  <audio id="audio-player" controls></audio>
+
+  <script>
+    let mediaRecorder, audioChunks;
+
+    function startRecording() {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.start();
+      });
+    }
+
+    function stopRecording() {
+      mediaRecorder.stop();
+    }
+
+    function sendAudio() {
+      const blob = new Blob(audioChunks, { type: 'audio/wav' });
+      const formData = new FormData();
+      formData.append('audio', blob);
+
+      fetch('/process', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('transcript').textContent = "🗣️ Bạn nói: " + data.transcript;
+        document.getElementById('ai-response').textContent = "🤖 AI: " + data.reply;
+        document.getElementById('audio-player').src = '/output.mp3';
+      });
+    }
+  </script>
+</body>
+</html>

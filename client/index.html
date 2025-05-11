@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>UNIMA Voice Chat</title>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 20px; }
+    h1 { text-align: center; color: #333; }
+    .chat-box { border: 1px solid #ccc; border-radius: 8px; padding: 10px;
+      height: 300px; overflow-y: auto; background: #fafafa; margin-bottom: 20px; }
+    .bubble { padding: 10px 14px; margin: 8px 0; max-width: 80%;
+      border-radius: 16px; font-size: 14px; }
+    .user { background: #d1e7dd; align-self: flex-end; margin-left: auto; }
+    .ai { background: #e2e3e5; align-self: flex-start; margin-right: auto; }
+    button { padding: 10px 16px; font-size: 16px; border: none; border-radius: 6px;
+      margin-right: 10px; cursor: pointer; }
+    #startBtn { background-color: #198754; color: white; }
+    #stopBtn { background-color: #dc3545; color: white; }
+    #sendBtn { background-color: #0d6efd; color: white; }
+    audio { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎤 UNIMA Voice Chat</h1>
+    <div class="chat-box" id="chatBox"></div>
+    <div style="display: flex; justify-content: center;">
+      <button id="startBtn">Bắt đầu ghi âm</button>
+      <button id="stopBtn" disabled>Kết thúc</button>
+      <button id="sendBtn" disabled>Gửi</button>
+    </div>
+    <audio id="audioPlayback" controls></audio>
+  </div>
+
+  <script>
+    let mediaRecorder; let audioChunks = []; let recordedBlob;
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const chatBox = document.getElementById("chatBox");
+    const audioPlayback = document.getElementById("audioPlayback");
+
+    function appendBubble(text, sender) {
+      const div = document.createElement("div");
+      div.className = "bubble " + sender;
+      div.innerText = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    startBtn.onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream); audioChunks = [];
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const audioUrl = URL.createObjectURL(recordedBlob);
+        audioPlayback.src = audioUrl;
+        sendBtn.disabled = false;
+      };
+      mediaRecorder.start(); startBtn.disabled = true; stopBtn.disabled = false;
+    };
+
+    stopBtn.onclick = () => { mediaRecorder.stop(); stopBtn.disabled = true; startBtn.disabled = false; };
+
+    sendBtn.onclick = async () => {
+      const formData = new FormData();
+      formData.append('audio', recordedBlob, 'voice.webm');
+      appendBubble("🎙️ [Đã gửi giọng nói...]", "user");
+      try {
+        const res = await fetch('http://localhost:3001/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        appendBubble("🧠 " + (data.transcript || "Không có phản hồi từ AI"), "ai");
+      } catch (err) {
+        appendBubble("❌ Lỗi gửi hoặc server không phản hồi.", "ai");
+      }
+    };
+  </script>
+</body>
+</html>
