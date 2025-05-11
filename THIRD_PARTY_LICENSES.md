@@ -17,7 +17,7 @@ Dự án UNIMA Voice sử dụng nhiều thư viện mã nguồn mở mạnh m�
 * Giấy phép: MIT License
 * Ghi chú: Được phép sử dụng, chỉnh sửa, thương mại hóa nếu ghi rõ tác quyền
 * Link: [https://github.com/openai/whisper](https://github.com/openai/whisper)
-
+*
 ---
 
 ### 2. **gTTS (Google Text-to-Speech)**
